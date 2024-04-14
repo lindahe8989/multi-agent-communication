@@ -57,7 +57,8 @@ print(int_pixels_flattened.dtype)
 #         return output 
 
 
-
+# I'd use MambaByte: https://huggingface.co/papers/2401.13660
+# You'll have to change from bits to bytes = 8 bits and use one-hot encodings.
 model = MambaForCausalLM.from_pretrained("state-spaces/mamba-130m-hf")
 # # input_ids = tokenizer("Hey how are you doing?", return_tensors = "pt")["input_ids"]
 # # input_ids (torch.LongTensor of shape (batch_size, input_ids_length)) — Indices of input sequence tokens in the vocabulary.
