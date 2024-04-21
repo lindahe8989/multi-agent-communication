@@ -63,18 +63,18 @@ class PolicyNetwork(nn.Module):
 
 
 # Different Action Spaces 
-class CompressionActionSpace: 
-    def __init__(self): 
-        self.actions = {
-            0: {'quantization_level': 'low', 'encoding_strategy': 'Huffman'}, 
-            1: {'quantization_level': 'medium', 'encoding_strategy': 'Arithmetic'}, 
-            2: {'quantization_level': 'high', 'encoding_strategy': 'RunLength'}, 
-        }
+# class CompressionActionSpace: 
+#     def __init__(self): 
+#         self.actions = {
+#             0: {'quantization_level': 'low', 'encoding_strategy': 'Huffman'}, 
+#             1: {'quantization_level': 'medium', 'encoding_strategy': 'Arithmetic'}, 
+#             2: {'quantization_level': 'high', 'encoding_strategy': 'RunLength'}, 
+#         }
 
-    def get_action_params(self, action_id): 
-        return self.actions[action_id]
+#     def get_action_params(self, action_id): 
+#         return self.actions[action_id]
     
-    
+
 class RLAgent: 
     def __init__(self, input_size, hidden_size, output_size, learning_rate = 1e-3): 
         self.policy_network = PolicyNetwork(input_size, hidden_size, output_size)
@@ -246,3 +246,11 @@ def evaluate_agent(agent, image_paths):
 test_image_folder = 'path/to/your/test/images'
 test_image_paths = [os.path.join(test_image_folder, image) for image in os.listdir(test_image_folder)]
 evaluate_agent(agent, test_image_paths)
+
+
+### Action Space: 
+# a bunch of transfomer and mamba models with different parameters trained.  
+# Reward function: should be a tradeoff of how good the result/decoding image is and how much compute you used. 
+# This is good because the model automatically learns which features deserve more compute and which features deserve less compute. 
+
+# Extension: have an RL agent that automatically trains the optimal compute of the transformer/pixel-pixel image transformation. 
