@@ -9,7 +9,6 @@ from torch.utils.data import DataLoader
 from mamba_ssm import Mamba
 from torchvision import datasets, transforms
 from tqdm.notebook import tqdm
-from collections import OrderedDict
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -33,8 +32,15 @@ class ToBits(nn.Module):
     x = expand_bits(x).flatten()
     return F.one_hot(x, 2)
 
+class ToBytes(nn.Module):
+  def forward(self, x):
+    x = torch.clamp((x * 256).long(), 0, 255)
+    x = x.flatten()
+    return F.one_hot(x, 256)
+
 batch_size = 4
 transform = transforms.Compose([ToRGB(), ToBits()])
+# transform = transforms.Compose([ToRGB(), ToBytes()])
 train_data = datasets.MNIST(root='./data', train=True, download=True, transform=transform)
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
@@ -44,6 +50,7 @@ class Raster(nn.Module):
     self.input_dim = input_dim
     self.hidden_dim = hidden_dim
     self.output_dim = output_dim
+    self.d_state = d_state
     self.d_conv = d_conv
     self.expand = expand
     self.mamba_blocks = mamba_blocks
@@ -58,14 +65,24 @@ class Raster(nn.Module):
         for i in range(mamba_blocks)
     ])
 
-  def forward(self, x, inference_params=None):
+  def forward(self, x):
     x = self.fc_in(x)
-    if inference_params is None:
-      inference_params = [None for i in self.layers]
-    for (layer, inf_param) in zip(self.layers, inference_params):
-      x = x + layer(x, inf_param)
+    for layer in self.layers:
+      x = x + layer(x)
     x = self.fc_out(x)
     return x
+
+  def step(self, x, conv_state, ssm_state):
+    x = self.fc_in(x)
+    new_conv_state = []
+    new_ssm_state = []
+    for (layer, conv, ssm) in zip(self.layers, conv_state, ssm_state):
+      dx, new_conv, new_ssm = layer.step(x, conv, ssm)
+      new_conv_state.append(conv)
+      new_ssm_state.append(ssm)
+      x = x + dx
+    x = self.fc_out(x)
+    return x, new_conv_state, new_ssm_state
 
 def train_raster(raster, optim, epochs=10):
   raster.train()
@@ -79,7 +96,7 @@ def train_raster(raster, optim, epochs=10):
 
       next_prediction = raster(target)
       loss = F.cross_entropy(next_prediction, target)
-      
+
       loss.backward()
       optim.step()
 
@@ -91,8 +108,6 @@ def train_raster(raster, optim, epochs=10):
 
 raster = Raster(mamba_blocks=3).to(device)
 optim = torch.optim.Adam(raster.parameters(), lr=1e-3)
-
-# Stop early, it'd take hours to actually train this and you get good results in just 30 seconds.
 train_raster(raster, optim, 10)
 
 with torch.no_grad():
@@ -100,7 +115,30 @@ with torch.no_grad():
   print(x[..., 0].mean())
   y = raster(x.unsqueeze(0).float().to(device))[0]
   img = y.argmax(dim=-1).double().reshape(28, 28, 3, 8) @ (1 << torch.arange(7, -1, -1)).double().to(device)
+  img = F.softmax(y, dim=-1)[..., 1].double().reshape(28, 28, 3, 8) @ (1 << torch.arange(7, -1, -1)).double().to(device)
   img = img.int().cpu()
   plt.imshow(img)
   plt.show()
-  F.softmax(y, dim=-1)
+
+def sample(raster, beta=0.3):
+  x = torch.tensor([[[1., 0.]]]).to(device)
+  conv_state = torch.zeros(
+      raster.mamba_blocks, 1, raster.hidden_dim * raster.expand, raster.d_conv, device=device
+  )
+  ssm_state = torch.zeros(
+      raster.mamba_blocks, 1, raster.hidden_dim * raster.expand, raster.d_state, device=device
+  )
+
+  bits = [0]
+  with torch.no_grad():
+    pbar = tqdm(range(28 * 28 * 3 * 8 - 1))
+    for i in pbar:
+      y, conv_state, ssm_state = raster.step(x, conv_state, ssm_state)
+      p = torch.softmax(beta * y[0][0], -1)
+      # print(y[0][0], p)
+      idx = torch.multinomial(p, 1)
+      bits.append(idx.item())
+      x = F.one_hot(idx, 2).unsqueeze(0).float()
+  return bits
+
+# To be continued...
