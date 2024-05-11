@@ -1,6 +1,11 @@
+\documentclass[tikz]{standalone}
+\usepackage{import}
+\subimport{diagrams/layers/}{init}
+
 \def\ImgColor{rgb:white,1;black,1}
 \def\JPEGColor{rgb:yellow,5;red,5;white,5}
 
+\begin{document}
 \begin{tikzpicture}
 \tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
 
@@ -12,3 +17,4 @@
 \draw [connection]  (p1-east)    -- node {\midarrow} (p2-west);
 
 \end{tikzpicture}
+\end{document}

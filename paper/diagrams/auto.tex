@@ -1,3 +1,6 @@
+\documentclass[tikz]{standalone}
+\usepackage{import}
+\subimport{diagrams/layers/}{init}
 
 \def\ImgColor{rgb:yellow,1;white,1;black,1}
 \def\ConvColor{rgb:yellow,5;red,2.5;white,5}
@@ -5,6 +8,7 @@
 \def\HiddenColor{rgb:yellow,5;red,5;white,5}
 \def\ResultColor{rgb:red,1;white,1;black,1}
 
+\begin{document}
 \begin{tikzpicture}
 \tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
 
@@ -36,3 +40,4 @@
 \draw [connection]  (d3-east)    -- node {\midarrow} (d2-west);
 \draw [connection]  (d2-east)    -- node {\midarrow} (d1-west);
 \end{tikzpicture}
+\end{document}

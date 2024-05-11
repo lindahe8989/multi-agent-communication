@@ -1,8 +1,13 @@
+\documentclass[tikz]{standalone}
+\usepackage{import}
+\subimport{diagrams/layers/}{init}
+
 \def\ImgColor{rgb:white,1;black,1}
 \def\InputColor{rgb:yellow,5;red,2.5;white,5}
 \def\OutputColor{rgb:yellow,5;red,2.5;white,5}
 \def\MambaColor{rgb:yellow,5;red,5;white,5}
 
+\begin{document}
 \begin{tikzpicture}
 \tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
 
@@ -30,3 +35,4 @@
 \draw[connection]  (mamba3-east)  -- node {\midarrow} (out1-west);
 
 \end{tikzpicture}
+\end{document}
