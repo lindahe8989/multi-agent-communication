@@ -1,0 +1,32 @@
+\def\ImgColor{rgb:white,1;black,1}
+\def\InputColor{rgb:yellow,5;red,2.5;white,5}
+\def\OutputColor{rgb:yellow,5;red,2.5;white,5}
+\def\MambaColor{rgb:yellow,5;red,5;white,5}
+
+\begin{tikzpicture}
+\tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
+
+\pic[shift={(0,0,0)}] at (0,0,0) {Box={name=img, caption=$28\times 28$, fill=\ImgColor,opacity=0.5,height=28,width=2,depth=28}};
+
+\pic[shift={(2,0,0)}] at (img-east) {Box={name=in1,fill=\InputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(0.25,0,0)}] at (in1-east) {Box={name=in2, fill=\InputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(0.25,0,0)}] at (in2-east) {Box={name=in3, fill=\InputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(1.25,0,0)}] at (in3-east) {Box={name=in4, fill=\InputColor,opacity=0.5,height=16,width=2,depth=2}};
+\node[align=center,shift={(0,-1,0)}] at (in3-south) {$784\times 256$ one-hot inputs};
+\node[right,shift={(0.25,0,0)}] at (in3-east){{\Huge ...}};
+\pic[shift={(1.25,0,0)}] at (in4-east) {Box={name=mamba1,caption=Attention\texttimes 3, fill=\MambaColor,opacity=0.5,height=16,width=2,depth=8}};
+\pic[shift={(0.25,0,0)}] at (mamba1-east) {Box={name=mamba2,fill=\MambaColor,opacity=0.5,height=16,width=2,depth=8}};
+\pic[shift={(0.25,0,0)}] at (mamba2-east) {Box={name=mamba3,fill=\MambaColor,opacity=0.5,height=16,width=2,depth=8}};
+
+\pic[shift={(1,0,0)}] at (mamba3-east) {Box={name=out1, fill=\OutputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(0.25,0,0)}] at (out1-east) {Box={name=out2, fill=\OutputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(0.25,0,0)}] at (out2-east) {Box={name=out3, fill=\OutputColor,opacity=0.5,height=16,width=2,depth=2}};
+\pic[shift={(1.25,0,0)}] at (out3-east) {Box={name=out4, fill=\OutputColor,opacity=0.5,height=16,width=2,depth=2}};
+\node[align=center,shift={(0,-1,0)}] at (out3-south) {$784\times 256$ next-byte predictions};
+\node[right,shift={(0.25,0,0)}] at (out3-east){{\Huge ...}};
+
+\draw[connection]  (img-east)  -- node {\midarrow} (in1-west);
+\draw[connection]  (in4-east)  -- node {\midarrow} (mamba1-west);
+\draw[connection]  (mamba3-east)  -- node {\midarrow} (out1-west);
+
+\end{tikzpicture}

@@ -1,0 +1,68 @@
+\pdfoutput=1
+
+\documentclass[11pt]{article}
+
+\usepackage[final]{final}
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+% \usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usepackage{import}
+\subimport{./diagrams/layers/}{init}
+\usetikzlibrary{positioning}
+
+\title{Efficient Image Compression}
+
+\author{James Camacho \\
+  MIT / AI \\
+  \texttt{jamesc03@mit.edu} \\\And
+  Linda He \\
+  Harvard / Applied Mathematics \\
+  \texttt{lindahe@college.harvard.edu} \\}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+  With high-dimensional spaces such as images or video, perfect communication becomes prohibitively expensive. A lossy, compressed version is cheaper to transmit and often good enough for most purposes. Traditional algorithms such as JPEG use a Fourier transform to pick out the most important features for transmission. In this paper, we explore using auto-encoders and raster-encoders (pixel-by-pixel autoregression) to automatically and efficiently compress images instead. We find they significantly outperform JPEG on the MNIST dataset, and discuss potential future improvements to their speed and cost via reinforcement learning.
+\end{abstract}
+
+
+% \begin{figure}[h]
+%   \centering
+%   \include{./diagrams/auto.tex}
+%   \caption{My TikZ Figure}
+%   \label{fig:myfigure}
+% \end{figure}
+
+
+\section{Introduction}
+
+Over 75\% of internet traffic comes in the form of video \citep{cisco-2018-traffic}.
+
+\section{Related Work}
+
+\section{Methods}
+
+\subsection{Autoencoders}
+
+
+\section{Discussion}
+
+Testing this: This is some text with a citation \citep{lazaridou-etal-2020-multi}.
+
+\section*{Acknowledgments}
+
+\bibliography{references}
+
+\appendix
+
+\section{Example Appendix}
+\label{sec:appendix}
+
+This is an appendix.
+
+\end{document}

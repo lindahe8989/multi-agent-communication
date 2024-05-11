@@ -1,0 +1,38 @@
+
+\def\ImgColor{rgb:yellow,1;white,1;black,1}
+\def\ConvColor{rgb:yellow,5;red,2.5;white,5}
+\def\DeconvColor{rgb:yellow,5;red,2.5;white,5}
+\def\HiddenColor{rgb:yellow,5;red,5;white,5}
+\def\ResultColor{rgb:red,1;white,1;black,1}
+
+\begin{tikzpicture}
+\tikzstyle{connection}=[ultra thick,every node/.style={sloped,allow upside down},draw=\edgecolor,opacity=0.7]
+
+\pic[shift={(0,0,0)}] at (0,0,0) {Box={name=c1, caption=$1\times 28\times 28$, fill=\ImgColor,opacity=0.5,height=28,width=3,depth=28}};
+
+\pic[shift={(1,0,0)}] at (c1-east) {Box={name=c2, caption=$8\times 16\times 16$, fill=\ConvColor,opacity=0.5,height=16,width=8,depth=16}};
+
+\pic[shift={(1,0,0)}] at (c2-east) {Box={name=c3, caption=$16\times 8\times 8$, fill=\ConvColor,opacity=0.5,height=8,width=8,depth=8}};
+
+\pic[shift={(1,0,0)}] at (c3-east) {Box={name=c4, caption=$32\times 4\times 4$, fill=\ConvColor,opacity=0.5,height=4,width=8,depth=4}};
+
+\pic[shift={(1,0,0)}] at (c4-east) {Box={name=h, caption=$h$, fill=\HiddenColor,opacity=0.5,height=32,width=3,depth=3}};
+
+\pic[shift={(1,0,0)}] at (h-east) {Box={name=d4, caption=$32\times 4\times 4$, fill=\DeconvColor,opacity=0.5,height=4,width=8,depth=4}};
+
+\pic[shift={(1,0,0)}] at (d4-east) {Box={name=d3, caption=$16\times 8\times 8$, fill=\DeconvColor,opacity=0.5,height=8,width=8,depth=8}};
+
+\pic[shift={(1,0,0)}] at (d3-east) {Box={name=d2, caption=$8\times 16\times 16$, fill=\DeconvColor,opacity=0.5,height=16,width=8,depth=16}};
+
+\pic[shift={(1,0,0)}] at (d2-east) {Box={name=d1, caption=$1\times 28\times 28$, fill=\ResultColor,opacity=0.5,height=28,width=3,depth=28}};
+
+
+\draw [connection]  (c1-east)    -- node {\midarrow} (c2-west);
+\draw [connection]  (c2-east)    -- node {\midarrow} (c3-west);
+\draw [connection]  (c3-east)    -- node {\midarrow} (c4-west);
+\draw [connection]  (c4-east)    -- node {\midarrow} (h-west);
+\draw [connection]  (h-east)    -- node {\midarrow} (d4-west);
+\draw [connection]  (d4-east)    -- node {\midarrow} (d3-west);
+\draw [connection]  (d3-east)    -- node {\midarrow} (d2-west);
+\draw [connection]  (d2-east)    -- node {\midarrow} (d1-west);
+\end{tikzpicture}

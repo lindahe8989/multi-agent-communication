@@ -1,1 +1,7 @@
 data/
+images/
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
