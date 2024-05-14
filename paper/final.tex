@@ -4,6 +4,7 @@
 
 \usepackage[final]{final}
 \usepackage{times}
+\usepackage{amsfonts}
 \usepackage{latexsym}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
@@ -53,14 +54,14 @@ These vision transformers bear a striking resemblance to the JPEG algorithm
 
 \subsection{Auto-Encoders}
 
-\begin{figure*}[t]
+\begin{figure*}
   \centering
-  \includegraphics[width=2\columnwidth]{diagrams/auto.pdf}
+  \includegraphics[width=1.5\columnwidth]{diagrams/auto.pdf}
   \caption{Auto-encoder network.}
   \label{fig:auto}
 \end{figure*}
 
-\begin{figure*}[t]
+\begin{figure*}
   \centering
   \includegraphics[width=0.2\columnwidth]{diagrams/reconstructions/original.png}
   \includegraphics[width=0.2\columnwidth]{diagrams/reconstructions/0.png}
@@ -75,22 +76,18 @@ These vision transformers bear a striking resemblance to the JPEG algorithm
   \label{fig:recon}
 \end{figure*}
 
-Auto-encoders consist of an encoder and a decoder network trained together. Our encoder consists of three convolutional layers and a linear layer to control the latent dimension $h$, and the decoder has the reverse process (see Figure \ref{fig:auto}). By default, PyTorch stores floats using four bytes, so the encoding length takes $4h$ bytes.
+Auto-encoders consist of an encoder and a decoder network trained together. Our encoder consists of three convolutional layers and a linear layer to control the latent dimension $h$, and the decoder has the reverse process (see Figure \ref{fig:auto}). By default, PyTorch stores floats using four bytes, so the encoding takes $4h$ bytes.
 
-To train, we use the mean-squared error between the original and decoded images, running through two epochs of the MNIST training set with the Adam optimizer at $\gamma=10^{-3}$. We keep a separate dataset for testing. Sample reconstructions can be seen in Figure \ref{fig:recon}. As expected, the quality improves as the latent dimension increases, though they remain blurry. This is an artifact of our loss function. Minimizing the squared error,
-
+To train, we use the mean-squared error between the original and decoded images, running through two epochs of the MNIST training set with the Adam optimizer at $\gamma=10^{-3}$. We keep a separate dataset for testing. Sample reconstructions can be seen in Figure \ref{fig:recon}. As expected, the quality improves as the latent dimension increases, though the reconstructions remain blurry. This is an artifact of our loss function. Minimizing the squared error,
 $$L_2 = \sum (x-\mathrm{correct})^2$$
-
 is equivalent to maximizing the log-likelihood under a Gaussian prior for the error function:
-
 $$L_2 = \log\prod e^{(x-\mathrm{correct})^2}.$$
-
 The actual distribution of error is decidedly not Gaussian, so this biases the reconstruction towards a higher entropy than necessary. A common fix is to add a small adversarial loss \citep{makhzani-2016-adversarial}, but since our quality metric is the $L_2$ loss, we opt to keep the bias. We will use this bias to improve our raster-encoder.
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\columnwidth]{diagrams/hist.png}
-  \caption{Error hisogram, 100 bins.}
+  \caption{Error histogram, 100 bins.}
   \label{fig:hist}
 \end{figure}
 
@@ -98,14 +95,55 @@ The actual distribution of error is decidedly not Gaussian, so this biases the r
 
 \begin{figure*}[t]
   \centering
-  \includegraphics[width=2\columnwidth]{diagrams/raster.pdf}
+  \includegraphics[width=1.5\columnwidth]{diagrams/raster.pdf}
   \caption{Raster-encoder network.}
   \label{fig:raster}
 \end{figure*}
 
+In \th e olde days, television was broadcast pixel by pixel, row by row, until an entire frame was drawn. This ``raster'' pattern flatten images into one-dimension, which we use to train in a language-model style.
 
+Originally we converted the grayscale images to RGB and pulled apart the individual bits, so a $28\times 28\times 8$ bit grayscale image became a sequence of $T=18816$ tokens. This is too large for attention, being over a gigabyte per head dimension ($4T^2\approx 1.4\mathrm{GB}$), so we used the state-space model Mamba \citep{gu-2023-mamba}. It uses a scan algorithm and takes $O(T)$ memory and $O(T\log T)$ time, as opposed to $O(T^2)$ for attention.
+
+Unfortunately, we ran into software/hardware issues when scaling up, and didn't want to implement Mamba from scratch, so we switched to Transformers. To reduce the sequence length, we kept our images grayscale and used bytes rather than bits for our tokens, giving a sequence of $784$ tokens with $256$ one-hot dimensions (Figure \ref{fig:raster}).
+
+To compress, we can use arithmetic encoding on the output probabilities. Let $p(x)$ be the probability the next-byte prediction is $x$ and $q(x)$ the distribution of bytes encountered (i.e. in the training set). We want to minimize the compression length,
+$$\mathbb{E}_q[-\log p] = \sum q\log p,$$
+i.e. the traditional cross-entropy loss. Since the MNIST dataset is relatively small, the training data is unlikely to perfectly match the underlying image distribution. To fix this, we can inject extra entropy into $q$ while minimizing the expected error. We wish to minimize
+$$L_2 = \mathbb{E}_q[(x-\mathrm{correct})^2] = \sum (x-\mathrm{correct})^2q(x)$$
+for a fixed entropy
+$$H(q) = -\sum q\log q.$$
+Lagrange multipliers give
+$$q\propto e^{-\beta(x-\mathrm{correct})^2},$$
+which is the Gaussian blurring we saw from the auto-encoder section. The choice of inverse-temperature $\beta$ does matter. Low values make $q$ essentially uniform, while higher ones provide almost no smoothing. The former makes every pixel take nearly the full eight bits to compress, while the latter has too much surprisal for a few pixels. We find the best results for $\beta\approx 32$.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\columnwidth]{diagrams/betas.png}
+  \caption{Raster-encoding for several smoothing parameters. Increasing $\beta$ leads to better compression until reversing around $\beta=64$, when the surprisal becomes too expensive to allow switching colors often enough.}
+  \label{fig:artifacts}
+\end{figure}
+
+Since a decoder would not have access to the original image, it can only compute probabilities using previously decoded pixels. Thus, we have to encode the pixels raster-wise, feeding back in the chosen value after each step. We choose values to minimize the following cost function:
+$$\mathrm{cost}(x) = \mathrm{quality}\cdot(x-\mathrm{correct})^2-\log p(x).$$
+A higher quality ensures the error is smaller, at the cost of using more bits. Since the decoder does not have access to future pixel values, we also mask the encoder's attention to only look at previous pixels. This has the added benefit of removing artifacts present with full attention.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.25\columnwidth]{diagrams/artifacts.png}
+  \includegraphics[width=0.25\columnwidth]{diagrams/no_artifacts.png}
+  \caption{Full attention (left) vs. masked attention (right).}
+  \label{fig:artifacts}
+\end{figure}
 
 \section{Results}
+
+\begin{figure*}[t]
+  \centering
+  \includegraphics[width=2\columnwidth]{diagrams/results.png}
+  \caption{Compression results.}
+  \label{fig:results}
+\end{figure*}
+
 
 
 \section{Discussion}
