@@ -144,9 +144,11 @@ A higher quality ensures the error is smaller, at the cost of using more bits. S
   \label{fig:results}
 \end{figure*}
 
-We find the auto-encoders outperform JPEG for small compression lengths, but flatten out at around $400$ bytes. This is likely because the convolutions only capture local features. Raster-encoders, which only capture global features, begin outperforming JPEG \emph{after} $400$ bytes (Figure \ref{fig:results}). A better compression scheme may combine the two, such as with vision transformers or LeCun's zip code recognition scheme \citep{lecun-1989-zip}.
+We find the auto-encoders outperform JPEG for small compression lengths, but flatten out at around $400$ bytes. This is likely because the convolutions only capture local features. Raster-encoders, which only capture global features, begin outperforming JPEG \emph{after} $400$ bytes (Figure \ref{fig:results}). This implies a combination of the two may create a better scheme, such as using vision transformers or switching the raster pattern to a space-filling curve.
 
 \section{Further Discussion}
+
+\section*{Contributions}
 
 
 \bibliography{references}
