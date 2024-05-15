@@ -146,10 +146,36 @@ A higher quality ensures the error is smaller, at the cost of using more bits. S
 
 We find the auto-encoders outperform JPEG for small compression lengths, but flatten out at around $400$ bytes. This is likely because the convolutions only capture local features. Raster-encoders, which only capture global features, begin outperforming JPEG \emph{after} $400$ bytes (Figure \ref{fig:results}). This implies a combination of the two may create a better scheme, such as using vision transformers or switching the raster pattern to a space-filling curve.
 
-\section{Further Discussion}
+\section{Further Work}
+\subsection{Reinforcement Learning}
+We explored a reinforcement learning (RL) agent-based approach to improve image compression results. In this method, the RL agent determines the discrete allocation of bits (0s and 1s) for compressing the image -- the decision-making process is guided by rewards and feedback from the environment, which balances the accuracy of the encoding with the number of bits used.
+
+The model contains the following steps: 
+\begin{enumerate}
+    \item \textbf{Feature Extraction:} The RL agent first inputs the image into an encoder, which is a CNN  that extracts features from the image and transforms them into a latent space representation. 
+    \item \textbf{Latent Space to Hidden Space Conversion:} The latent space representation is then passed through a decoder: This decoder integrates a DeepMamba model (consists of multiple Mamba layers, each performing specific transformations to refine the hidden space representation) that processes the latent space to output a hidden space. The DeepMamba model. 
+    \item \textbf{Action Decision:} Given the hidden space and the current encoding, the RL agent determines the next action. The agent can choose to append either a 0 bit or a 1 bit to the current encoding or terminate the encoding process. This decision is made using a Q-learning policy. 
+    \item \textbf{Environment Feedback:} After each action, the environment evaluates the accuracy of the updated encoding. This evaluation is done by comparing the reconstructed image (generated from the new encoding) to the original image using L2 error loss (mean squared error) with a deduction of how many bits are used in the encoding. 
+    \item \textbf{Iterative Optimization:} The loop continues iteratively: the agent updates the encoding, receives feedback, and refines its actions to optimize the balance between encoding accuracy and the number of bits used.  
+\end{enumerate}
+ 
+\textbf{Results:} Based on our experimental result, the RL agent converges to outputting one bit encoding. RL is very tricky to work with/very unstable, we discuss in the next section ways we can improve this approach.
+
+\begin{figure}[hb]
+  \centering
+  \includegraphics[width=\columnwidth]{diagrams/rl.png}
+  \caption{Reinforcement learning schematic.}
+  \label{fig:rl}
+\end{figure}
+
+\subsection{Other Approaches}
+One potential approach to refining image compression involves employing the mixture-of-experts method. Specifically, given the promising results of raster encoding, we propose training a reinforcement learning (RL) agent to dynamically select the most appropriate pre-trained language model (LLM) for a given image. This approach leverages a diverse set of LLMs, each trained with different parameters and layers of Mamba and GPT-4 models, to optimize the encoding process.
+The RL agent's task is to decide, based on the characteristics of the input image, whether to apply a dense encoding or a sparse encoding strategy. By intelligently choosing the appropriate LLM model, the agent can balance the trade-offs between encoding density and computational efficiency. 
 
 \section*{Contributions}
+James Camacho wrote the sections on auto- and raster-encoding, as well as the introduction. Linda He wrote the sections on JPEG and reinforcement learning.
 
+\newpage
 
 \bibliography{references}
 
